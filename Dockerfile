@@ -22,11 +22,11 @@ ARG STERN_VERSION="1.20.1"
 ARG SENTINEL_VERSION="0.18.4"
 
 ARG ZSH_VERSION="5.8-3ubuntu1"
-ARG MULTISTAGE_BUILDER_VERSION="2020-12-07"
+ARG MULTISTAGE_BUILDER_VERSION="dev"
 
 ######################################################### BUILDER ######################################################
-FROM ksandermann/multistage-builder:$MULTISTAGE_BUILDER_VERSION as builder
-MAINTAINER Kevin Sandermann <kevin.sandermann@gmail.com>
+FROM insecurit/multistage-builder:$MULTISTAGE_BUILDER_VERSION as builder
+# MAINTAINER Kevin Sandermann <kevin.sandermann@gmail.com>
 LABEL maintainer="kevin.sandermann@gmail.com"
 
 ARG OC_CLI_VERSION
@@ -119,7 +119,7 @@ RUN curl https://releases.hashicorp.com/sentinel/${SENTINEL_VERSION}/sentinel_${
 ######################################################### IMAGE ########################################################
 
 FROM ubuntu:$UBUNTU_VERSION
-MAINTAINER Kevin Sandermann <kevin.sandermann@gmail.com>
+# DEPRECATED MAINTAINER Kevin Sandermann <kevin.sandermann@gmail.com>
 LABEL maintainer="kevin.sandermann@gmail.com"
 
 # tooling versions
@@ -142,9 +142,9 @@ WORKDIR /root
 #https://github.com/waleedka/modern-deep-learning-docker/issues/4#issue-292539892
 #bc and tcptraceroute needed for tcping
 RUN apt-get update && \
-    apt-get dist-upgrade -y && \
-    apt-get upgrade -y && \
-    apt-get install -y \
+#    apt-get dist-upgrade -y && \
+#    apt-get upgrade -y --no-install-recommends && \
+    apt-get install -y --no-install-recommends \
     apt-utils \
     apt-transport-https \
     bash-completion \
@@ -192,10 +192,11 @@ RUN apt-get update && \
 #install zsh
 RUN locale-gen en_US.UTF-8
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     fonts-powerline \
     powerline \
-    zsh=$ZSH_VERSION
+    zsh=$ZSH_VERSION && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV TERM xterm
 ENV ZSH_THEME agnoster
@@ -247,16 +248,18 @@ RUN apt remove azure-cli -y && apt autoremove -y && \
     echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
     tee /etc/apt/sources.list.d/azure-cli.list && \
     apt-get update && \
-    apt-get install -y azure-cli=$AZ_CLI_VERSION && \
+    apt-get install -y --no-install-recommends azure-cli=$AZ_CLI_VERSION && \
     az --version && \
-    az extension add --name azure-devops
+    az extension add --name azure-devops && \
+    rm -rf /var/lib/apt/lists/*
 
 #install gcloud
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
     apt-get update && \
-    apt-get install -y \
-    google-cloud-sdk=${GCLOUD_VERSION}
+    apt-get install -y --no-install-recommends \
+    google-cloud-sdk=${GCLOUD_VERSION} && \
+    rm -rf /var/lib/apt/lists/*
 
 #install binaries
 COPY --from=builder "/root/download/helm2/linux-amd64/helm" "/usr/local/bin/helm2"
